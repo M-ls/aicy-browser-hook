@@ -1,6 +1,7 @@
 name: Build and check
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
 permissions:

@@ -18,7 +18,7 @@ Hook 使用上述版本的类名和方法名，其他 Aicy / Flyme 版本需检�
 
 ## 安装
 
-1. 安装发布者提供的已签名 `AicyBrowserHook.apk`（发布后放在仓库 Releases）。GitHub Actions 产物带 `unsigned`，需要自行签名才能安装。
+1. 从 [Releases](https://github.com/M-ls/aicy-browser-hook/releases) 下载并安装已签名的 `AicyBrowserHook-v版本号.apk`。版本发布由 GitHub Actions 自动完成，沿用原签名密钥；普通构建检查的 `unsigned` 产物需要自行签名。
 2. 在 LSPosed 启用模块，作用域同时勾选 **Aicy 识屏**（`com.meizu.picker`）和 **Aicy 助手**（`com.meizu.voiceassistant`）。
 3. 重启这两个应用的进程，或重启手机。
 4. 从桌面或 LSPosed 打开模块设置，选择浏览器。默认选择 Chrome，默认开启重定向与网页搜索入口。
@@ -54,7 +54,7 @@ Hook 使用上述版本的类名和方法名，其他 Aicy / Flyme 版本需检�
 ./build.ps1 -Unsigned
 ```
 
-源码在 `project/`，唯一环境文件为 `project/Dockerfile`。输出在 `dist/`，下载缓存、编译临时文件及本地签名密钥统一在 `work/`。详见 [BUILDING.md](BUILDING.md)。
+源码在 `project/`，唯一环境文件为 `project/Dockerfile`。输出在 `dist/`，下载缓存、编译临时文件及本地签名密钥统一在 `work/`。详见 [BUILDING.md](BUILDING.md)。推送 `v*` 版本标签会自动构建、签名并发布 APK、源码包与校验文件，操作步骤见 [AUTORELEASE.md](AUTORELEASE.md)。
 
 [验证范围与发布说明](RELEASE.md) · [Hook 入口说明](HOOKS.md) · [第三方说明](THIRD_PARTY.md)
 

@@ -29,13 +29,15 @@
 ./build.ps1 -Unsigned
 ```
 
-输出 `dist/AicyBrowserHook-unsigned.apk`，经过相同编译、对齐及 JVM 检查，不生成或读取签名密钥。GitHub Actions 使用这个模式；它是构建检查产物，不能直接安装。
+输出 `dist/AicyBrowserHook-unsigned.apk`，经过相同编译、对齐及 JVM 检查，不生成或读取签名密钥。GitHub Actions 的分支提交与 PR 检查使用这个模式；它是构建检查产物，不能直接安装。
 
 ## 签名
 
-本地模式复用 `work/aicy-hook-build/runtime/signing.jks`。不存在时会创建一把本地开发密钥（别名 `aicy-local`，密码 `android`）。它用于个人构建，不作为公共 CI 的发布密钥。
+本地模式复用 `work/aicy-hook-build/runtime/signing.jks`。不存在时会创建一把本地开发密钥（别名 `aicy-local`，密码 `android`）。新生成的密钥不能覆盖安装此前已发布的版本。
 
-现有已验证 APK 使用的原密钥留在本机 `work/`，不包含在源码包。持续发布能覆盖安装的 APK，应始终使用同一密钥并自行保存备份；CI 产物请在可信的本地环境用自己的固定发布密钥签名。APK 签名证书指纹可以公开，私钥不应提交到仓库。
+现有已验证 APK 使用的原密钥留在本机 `work/`，不包含在源码包。仓库所有者已授权将同一密钥及其密码存入本仓库 Actions Secrets，版本标签工作流沿用它自动发布可安装 APK。应保存离线备份，持续发布始终使用同一密钥。APK 签名证书指纹可以公开，私钥不应提交到仓库。
+
+发布模式使用 `./build.ps1 -Release -SigningKeyPath <现有密钥文件>`，要求设置 `SIGNING_STORE_PASSWORD`、`SIGNING_KEY_PASSWORD`、`SIGNING_KEY_ALIAS`、`SIGNING_CERT_SHA256` 环境变量。密钥以只读方式挂载，密码通过环境变量传入 apksigner；不会自动生成密钥，证书指纹不匹配会阻止发布。完整远端操作步骤见 [AUTORELEASE.md](AUTORELEASE.md)。
 
 独立签名命令参考 Android 官方 [apksigner](https://developer.android.com/tools/apksigner)。
 

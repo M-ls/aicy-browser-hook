@@ -4,7 +4,14 @@ export LANG=C.UTF-8
 BUILD_DIR=/build
 OUTPUT_DIR=/out
 SIGNING_MODE="${SIGNING_MODE:-local}"
-case "$SIGNING_MODE" in local|unsigned) ;; *) echo "SIGNING_MODE must be local or unsigned" >&2; exit 2 ;; esac
+case "$SIGNING_MODE" in local|unsigned|release) ;; *) echo "SIGNING_MODE must be local, unsigned or release" >&2; exit 2 ;; esac
+if [[ "$SIGNING_MODE" == release ]]; then
+    [[ -f /signing/release.jks ]] || { echo "Release signing key is missing" >&2; exit 2; }
+    : "${SIGNING_STORE_PASSWORD:?Required for release signing}"
+    : "${SIGNING_KEY_PASSWORD:?Required for release signing}"
+    : "${SIGNING_KEY_ALIAS:?Required for release signing}"
+    : "${SIGNING_CERT_SHA256:?Required for release signing}"
+fi
 mkdir -p "$BUILD_DIR/classes" "$BUILD_DIR/dex" "$BUILD_DIR/tests" "$BUILD_DIR/testdex" "$BUILD_DIR/java" "$OUTPUT_DIR"
 find "$BUILD_DIR/classes" "$BUILD_DIR/dex" "$BUILD_DIR/tests" "$BUILD_DIR/testdex" "$BUILD_DIR/java" -type f -delete
 # Compile against Android SDK; D8 desugars the Java 8 callbacks for Android.
@@ -22,11 +29,19 @@ if [[ "$SIGNING_MODE" == unsigned ]]; then
     "$BUILD_TOOLS/zipalign" -c 4 "$APK_PATH"
 else
     APK_PATH="$OUTPUT_DIR/AicyBrowserHook.apk"
-if [[ ! -f "$BUILD_DIR/signing.jks" ]]; then
-    keytool -genkeypair -keystore "$BUILD_DIR/signing.jks" -storepass android -keypass android -alias aicy-local -keyalg RSA -keysize 3072 -validity 10000 -dname 'CN=Aicy Browser Hook Local Development'
-fi
-PATH=/opt/jre21/bin:$PATH "$BUILD_TOOLS/apksigner" sign --v4-signing-enabled false --ks "$BUILD_DIR/signing.jks" --ks-pass pass:android --ks-key-alias aicy-local --out "$APK_PATH" "$BUILD_DIR/aligned.apk"
-PATH=/opt/jre21/bin:$PATH "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK_PATH"
+    if [[ "$SIGNING_MODE" == release ]]; then
+        PATH=/opt/jre21/bin:$PATH "$BUILD_TOOLS/apksigner" sign --v4-signing-enabled false --ks /signing/release.jks --ks-pass env:SIGNING_STORE_PASSWORD --key-pass env:SIGNING_KEY_PASSWORD --ks-key-alias "$SIGNING_KEY_ALIAS" --out "$APK_PATH" "$BUILD_DIR/aligned.apk"
+    else
+        if [[ ! -f "$BUILD_DIR/signing.jks" ]]; then
+            keytool -genkeypair -keystore "$BUILD_DIR/signing.jks" -storepass android -keypass android -alias aicy-local -keyalg RSA -keysize 3072 -validity 10000 -dname 'CN=Aicy Browser Hook Local Development'
+        fi
+        PATH=/opt/jre21/bin:$PATH "$BUILD_TOOLS/apksigner" sign --v4-signing-enabled false --ks "$BUILD_DIR/signing.jks" --ks-pass pass:android --ks-key-alias aicy-local --out "$APK_PATH" "$BUILD_DIR/aligned.apk"
+    fi
+    PATH=/opt/jre21/bin:$PATH "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK_PATH" | tee "$BUILD_DIR/signature.txt"
+    if [[ "$SIGNING_MODE" == release ]]; then
+        actual_cert=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$BUILD_DIR/signature.txt")
+        [[ "$actual_cert" == "$SIGNING_CERT_SHA256" ]] || { echo "Release signing certificate does not match the existing APK" >&2; exit 3; }
+    fi
 fi
 "$BUILD_TOOLS/aapt" dump badging "$APK_PATH"
 # Pure JVM filter checks and actual Android Intent preservation checks are separate.
