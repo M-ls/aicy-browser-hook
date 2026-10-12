@@ -1,0 +1,27 @@
+/work/
+/dist/
+*.apk
+*.aab
+*.dex
+*.class
+*.jar
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+*.log
+*.zip
+local.properties
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+# Local records from development; public documentation lives in the files below.
+/*.png
+/构建检查.json
+/构建日志.txt
+/Hook日志.txt
+/使用说明.md
+/验证记录.md
+/Docker使用说明.md

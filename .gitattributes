@@ -1,0 +1,8 @@
+* text=auto
+*.sh text eol=lf
+*.java text eol=lf
+*.xml text eol=lf
+*.ps1 text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+Dockerfile text eol=lf

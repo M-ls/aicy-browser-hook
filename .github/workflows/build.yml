@@ -1,0 +1,30 @@
+name: Build and check
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Cache verified SDK downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            work/aicy-hook-build/platform-35_r02.zip
+            work/aicy-hook-build/build-tools_r35_linux.zip
+            work/aicy-hook-build/xposed-api-82.jar
+          key: android-sdk-${{ runner.os }}-${{ hashFiles('project/prepare-dependencies.ps1') }}
+      - name: Build unsigned APK and run checks
+        shell: pwsh
+        run: ./build.ps1 -Unsigned
+      - name: Upload build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: AicyBrowserHook-unsigned
+          path: dist/AicyBrowserHook-unsigned.apk
+          if-no-files-found: error
