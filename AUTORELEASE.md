@@ -7,14 +7,14 @@
 1. 修改 `project/AndroidManifest.xml` 的 `android:versionName`，并递增 `android:versionCode`。
 2. 更新 `README.md` 的当前版本，将 `RELEASE.md` 首行改为 `# 版本号 发布说明`，写入该版本的变更与实际验证范围。
 3. 提交并推送到 `main`，确认普通构建检查通过。
-4. 在这个提交上创建版本标签并推送。例如下一版为 1.0.11：
+4. 在这个提交上创建对应版本标签并推送。例如本版 1.1.3：
 
 ```powershell
-git tag -a v1.0.11 -m 'Release v1.0.11'
-git push origin v1.0.11
+git tag -a v1.1.3 -m 'Release v1.1.3'
+git push origin v1.1.3
 ```
 
-[Publish signed APK](https://github.com/M-ls/aicy-browser-hook/actions/workflows/release.yml) 自动检查标签格式、Manifest 版本、发布说明及提交是否属于 `main`，然后使用 Docker 编译并运行 23 项 JVM 检查。APK 经 zipalign、原密钥签名、签名验证与固定证书指纹比对后，自动创建 [Release](https://github.com/M-ls/aicy-browser-hook/releases)。
+[Publish signed APK](https://github.com/M-ls/aicy-browser-hook/actions/workflows/release.yml) 自动检查标签格式、Manifest 版本、发布说明及提交是否属于 `main`，然后使用 Docker 编译并运行 36 项路由 / 浏览器配置检查与 129 项搜索网址检查。APK 经 zipalign、原密钥签名、签名验证与固定证书指纹比对后，自动创建 [Release](https://github.com/M-ls/aicy-browser-hook/releases)。
 
 发布附件：
 

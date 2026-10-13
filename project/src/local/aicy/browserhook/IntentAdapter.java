@@ -13,10 +13,14 @@ public final class IntentAdapter {
 
     /** Copy before changing only component/package; keep the exact original Uri and payload. */
     public static Intent retarget(Intent original, String choice) {
+        String normalized = RoutingPolicy.normalizeChoice(choice);
+        if (BrowserChoices.CUSTOM.equals(normalized)) throw new IllegalArgumentException("Custom browser requires a validated package");
+        return retargetPackage(original, RoutingPolicy.DEFAULT.equals(normalized) ? null : normalized);
+    }
+    static Intent retargetPackage(Intent original, String packageName) {
         Intent result = new Intent(original);
         result.setComponent(null);
-        String normalized = RoutingPolicy.normalizeChoice(choice);
-        result.setPackage(RoutingPolicy.DEFAULT.equals(normalized) ? null : normalized);
+        result.setPackage(packageName);
         return result;
     }
 }

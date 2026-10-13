@@ -1,5 +1,6 @@
 import local.aicy.browserhook.RoutingPolicy;
 import local.aicy.browserhook.BrowserEntryScope;
+import local.aicy.browserhook.BrowserChoices;
 
 public final class PolicyTest {
     private static int checks;
@@ -11,8 +12,13 @@ public final class PolicyTest {
             check(!RoutingPolicy.isBrowserView(view, scheme, false), "only web browser URLs");
         check(!RoutingPolicy.isBrowserView("android.intent.action.SEND", "https", false), "share must survive");
         check(!RoutingPolicy.isBrowserView(view, "https", true), "selector must survive");
-        check(RoutingPolicy.VIA.equals(RoutingPolicy.normalizeChoice(RoutingPolicy.VIA)), "Via config");
-        check(RoutingPolicy.DEFAULT.equals(RoutingPolicy.normalizeChoice(RoutingPolicy.DEFAULT)), "default config");
+        for (String browser : new String[] {RoutingPolicy.CHROME, RoutingPolicy.VIA, RoutingPolicy.DEFAULT,
+                "com.microsoft.emmx", "org.mozilla.firefox", "com.brave.browser", "com.sec.android.app.sbrowser",
+                "com.opera.browser", "com.vivaldi.browser", "com.duckduckgo.mobile.android", "com.quark.browser",
+                "com.UCMobile", "com.tencent.mtt"})
+            check(browser.equals(RoutingPolicy.normalizeChoice(browser)), "browser config remains selected: " + browser);
+        check(RoutingPolicy.CHROME.equals(RoutingPolicy.normalizeChoice(null)), "missing config retains Chrome");
+        check(BrowserChoices.CUSTOM.equals(RoutingPolicy.normalizeChoice(BrowserChoices.CUSTOM)), "custom choice is preserved");
         check(RoutingPolicy.CHROME.equals(RoutingPolicy.normalizeChoice("unexpected")), "invalid config bounded");
         check(BrowserEntryScope.current() == null, "generic app launches outside browser entry");
         BrowserEntryScope.enter("V");

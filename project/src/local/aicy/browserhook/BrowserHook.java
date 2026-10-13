@@ -93,7 +93,8 @@ public final class BrowserHook implements IXposedHookLoadPackage {
         }
         if (config == null || !config.getBoolean("enabled", true)) return;
         String choice = RoutingPolicy.normalizeChoice(config.getString("choice", RoutingPolicy.CHROME));
-        Intent redirected = BrowserResolver.resolve(context.getPackageManager(), original, choice);
+        Intent redirected = BrowserResolver.resolve(context.getPackageManager(), original, choice,
+                config.getString("custom_browser_package", ""));
         boolean fallback = false;
         if (redirected == null && !RoutingPolicy.DEFAULT.equals(choice)) {
             redirected = BrowserResolver.resolve(context.getPackageManager(), original, RoutingPolicy.DEFAULT);

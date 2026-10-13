@@ -15,7 +15,7 @@ public final class RoutingPolicy {
     }
 
     public static String normalizeChoice(String choice) {
-        return VIA.equals(choice) || DEFAULT.equals(choice) ? choice : CHROME;
+        return BrowserChoices.normalize(choice);
     }
 
     public static boolean isBrowserView(String action, String scheme, boolean hasSelector) {

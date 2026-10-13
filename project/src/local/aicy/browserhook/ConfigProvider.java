@@ -24,7 +24,10 @@ public final class ConfigProvider extends ContentProvider {
             Bundle result = new Bundle();
             result.putBoolean("enabled", prefs.getBoolean("enabled", true));
             result.putString("choice", RoutingPolicy.normalizeChoice(prefs.getString("choice", RoutingPolicy.CHROME)));
+            result.putString("custom_browser_package", prefs.getString("custom_browser_package", ""));
             result.putBoolean("web_search_entry", prefs.getBoolean("web_search_entry", true));
+            result.putString("search_engine", SearchEngines.normalize(prefs.getString("search_engine", SearchEngines.AICY)));
+            result.putString("search_template", prefs.getString("search_template", ""));
             return result;
         }
         if ("status".equals(method) && extras != null && mayReport(context)) {

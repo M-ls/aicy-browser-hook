@@ -45,10 +45,11 @@ else
 fi
 "$BUILD_TOOLS/aapt" dump badging "$APK_PATH"
 # Pure JVM filter checks and actual Android Intent preservation checks are separate.
-javac -encoding UTF-8 -d "$BUILD_DIR/tests" /project/src/local/aicy/browserhook/RoutingPolicy.java /project/src/local/aicy/browserhook/BrowserEntryScope.java /project/tests/PolicyTest.java
+javac -encoding UTF-8 -d "$BUILD_DIR/tests" /project/src/local/aicy/browserhook/BrowserChoices.java /project/src/local/aicy/browserhook/RoutingPolicy.java /project/src/local/aicy/browserhook/BrowserEntryScope.java /project/src/local/aicy/browserhook/SearchEngines.java /project/tests/PolicyTest.java /project/tests/SearchEnginesTest.java
 java -cp "$BUILD_DIR/tests" PolicyTest
+java -cp "$BUILD_DIR/tests" SearchEnginesTest
 javac -encoding UTF-8 -source 8 -target 8 -classpath "$ANDROID_JAR:$BUILD_DIR/classes" -d "$BUILD_DIR/tests" /project/tests/AndroidIntentTest.java
-jar cf "$BUILD_DIR/intent-tests-classes.jar" -C "$BUILD_DIR/classes" local/aicy/browserhook/IntentAdapter.class -C "$BUILD_DIR/classes" local/aicy/browserhook/BrowserResolver.class -C "$BUILD_DIR/classes" local/aicy/browserhook/RoutingPolicy.class -C "$BUILD_DIR/tests" local/aicy/browserhook/AndroidIntentTest.class
+jar cf "$BUILD_DIR/intent-tests-classes.jar" -C "$BUILD_DIR/classes" local/aicy/browserhook/IntentAdapter.class -C "$BUILD_DIR/classes" local/aicy/browserhook/BrowserResolver.class -C "$BUILD_DIR/classes" local/aicy/browserhook/RoutingPolicy.class -C "$BUILD_DIR/classes" local/aicy/browserhook/BrowserChoices.class -C "$BUILD_DIR/classes" local/aicy/browserhook/BrowserValidator.class -C "$BUILD_DIR/tests" local/aicy/browserhook/AndroidIntentTest.class
 PATH=/opt/jre21/bin:$PATH "$BUILD_TOOLS/d8" --min-api 30 --lib "$ANDROID_JAR" --output "$BUILD_DIR/testdex" "$BUILD_DIR/intent-tests-classes.jar"
 (cd "$BUILD_DIR/testdex" && jar cf "$BUILD_DIR/intent-tests.jar" classes.dex)
 sha256sum "$APK_PATH"

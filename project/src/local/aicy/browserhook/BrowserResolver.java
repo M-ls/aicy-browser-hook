@@ -9,7 +9,15 @@ public final class BrowserResolver {
     private BrowserResolver() {}
     /** Returns a resolvable browser Intent without changing its URI or original MIME payload. */
     public static Intent resolve(PackageManager manager, Intent original, String choice) {
-        Intent routed = IntentAdapter.retarget(original, choice);
+        return resolve(manager, original, choice, null);
+    }
+    public static Intent resolve(PackageManager manager, Intent original, String choice, String customPackage) {
+        Intent routed;
+        if (BrowserChoices.CUSTOM.equals(RoutingPolicy.normalizeChoice(choice))) {
+            String packageName = customPackage == null ? "" : customPackage.trim();
+            if (BrowserValidator.error(manager, packageName) != null) return null;
+            routed = IntentAdapter.retargetPackage(original, packageName);
+        } else routed = IntentAdapter.retarget(original, choice);
         if (manager.resolveActivity(routed, PackageManager.MATCH_DEFAULT_ONLY) != null) return routed;
         if (original.getType() == null) return null;
         // Aicy URI cards can carry */*. Resolve a separate web-only probe, then address

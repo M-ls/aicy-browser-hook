@@ -32,9 +32,10 @@ public final class WebSearchEntry {
     private WebSearchEntry() {}
 
     public static int install(ClassLoader loader, String jumpClass, String searchMethod, boolean modern) {
+        final String webMethod = modern ? "b0" : "U";
         XC_MethodHook refresh = new XC_MethodHook() {
             @Override protected void afterHookedMethod(MethodHookParam param) {
-                try { refresh((Activity) param.thisObject, loader, jumpClass, searchMethod); }
+                try { refresh((Activity) param.thisObject, loader, jumpClass, searchMethod, webMethod); }
                 catch (Throwable failure) { log("panel update", failure); }
             }
         };
@@ -53,7 +54,7 @@ public final class WebSearchEntry {
         } catch (Throwable failure) { log("missing panel method " + method, failure); return 0; }
     }
 
-    private static void refresh(Activity activity, ClassLoader loader, String jumpClass, String searchMethod) {
+    private static void refresh(Activity activity, ClassLoader loader, String jumpClass, String searchMethod, String webMethod) {
         if (activity.isFinishing() || activity.isDestroyed()) return;
         View bottom = namedView(activity, "popup_bottom_container");
         View words = namedView(activity, "participle_word_layout");
@@ -90,7 +91,7 @@ public final class WebSearchEntry {
             label.setSingleLine(true);
             label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             button.addView(label, new LinearLayout.LayoutParams((LinearLayout.LayoutParams) reference.getLayoutParams()));
-            button.setOnClickListener(view -> search(activity, words, loader, jumpClass, searchMethod));
+            button.setOnClickListener(view -> search(activity, words, loader, jumpClass, searchMethod, webMethod));
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams((LinearLayout.LayoutParams) aiItem.getLayoutParams());
             row.addView(button, row.indexOfChild(aiItem), params);
             for (int i = 0; i < row.getChildCount(); i++) {
@@ -111,7 +112,7 @@ public final class WebSearchEntry {
         ((SearchIcon) ((ImageView) button.getChildAt(0)).getDrawable()).setInk(color);
     }
 
-    private static void search(Activity activity, View words, ClassLoader loader, String jumpClass, String searchMethod) {
+    private static void search(Activity activity, View words, ClassLoader loader, String jumpClass, String searchMethod, String webMethod) {
         try {
             Bundle config = activity.getContentResolver().call(ConfigProvider.URI, "get", null, null);
             if (config == null || !config.getBoolean("enabled", true) || !config.getBoolean("web_search_entry", true)) return;
@@ -120,8 +121,20 @@ public final class WebSearchEntry {
                 Toast.makeText(activity, "请先选择要搜索的文字", Toast.LENGTH_SHORT).show();
                 return;
             }
-            // Encode the query value so '&', '#', '+' and spaces remain literal selected text.
-            XposedHelpers.callStaticMethod(XposedHelpers.findClass(jumpClass, loader), searchMethod, activity, Uri.encode(selected));
+            String url = SearchEngines.buildUrl(config.getString("search_engine", SearchEngines.AICY),
+                    config.getString("search_template", ""), selected);
+            Class<?> jump = XposedHelpers.findClass(jumpClass, loader);
+            if (url == null) {
+                // Preserve Aicy's configured engine, parameters and existing query encoding.
+                XposedHelpers.callStaticMethod(jump, searchMethod, activity, Uri.encode(selected));
+            } else {
+                // Use Aicy's known web-URL path so existing browser routing remains in force.
+                BrowserEntryScope.enter("TextSearch");
+                try { XposedHelpers.callStaticMethod(jump, webMethod, activity, url); }
+                finally { BrowserEntryScope.exit(); }
+            }
+        } catch (IllegalArgumentException invalidTemplate) {
+            Toast.makeText(activity, invalidTemplate.getMessage() + "，请在模块设置中检查", Toast.LENGTH_LONG).show();
         } catch (Throwable failure) {
             log("web search click", failure);
             Toast.makeText(activity, "网页搜索未成功，请检查模块状态", Toast.LENGTH_SHORT).show();
