@@ -1,11 +1,11 @@
 name: Publish signed APK
 on:
   push:
-    tags: ['v*']
+    tags: ['[0-9]*-*']
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing version tag to publish (for example v1.0.10)
+        description: Existing VersionCode-VersionName tag to publish (for example 16-1.1.4)
         required: true
         type: string
 permissions:
@@ -30,14 +30,15 @@ jobs:
       - name: Check tag, version and release notes
         shell: pwsh
         run: |
-          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw 'Tag must be vMAJOR.MINOR.PATCH.' }
+          if ($env:RELEASE_TAG -notmatch '^[1-9][0-9]*-[0-9]+\.[0-9]+\.[0-9]+$') { throw 'Tag must be VersionCode-VersionName, for example 16-1.1.4.' }
           git checkout --detach "refs/tags/$env:RELEASE_TAG"
           if ($LASTEXITCODE -ne 0) { throw 'Version tag does not exist.' }
           git merge-base --is-ancestor HEAD origin/main
           if ($LASTEXITCODE -ne 0) { throw 'Release commit must belong to main.' }
           [xml]$manifest = Get-Content -LiteralPath project/AndroidManifest.xml -Raw
           $version = $manifest.manifest.GetAttribute('versionName', 'http://schemas.android.com/apk/res/android')
-          if ($env:RELEASE_TAG -cne "v$version") { throw 'Tag does not match Android versionName.' }
+          $versionCode = $manifest.manifest.GetAttribute('versionCode', 'http://schemas.android.com/apk/res/android')
+          if ($env:RELEASE_TAG -cne "$versionCode-$version") { throw 'Tag does not match Android versionCode-versionName.' }
           $notes = Get-Content -LiteralPath RELEASE.md -Raw
           if ($notes -notmatch "(?m)^# $([regex]::Escape($version)) 发布说明\s*$") { throw 'RELEASE.md must describe this version.' }
           "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
@@ -72,7 +73,7 @@ jobs:
       - name: Package release assets
         shell: pwsh
         run: |
-          $publicFiles = @('.gitattributes', '.gitignore', '.github/workflows/build.yml', '.github/workflows/release.yml', 'AUTORELEASE.md', 'BUILDING.md', 'HOOKS.md', 'README.md', 'RELEASE.md', 'THIRD_PARTY.md', 'build.ps1')
+          $publicFiles = @('.gitattributes', '.gitignore', '.github/workflows/build.yml', '.github/workflows/release.yml', 'AUTORELEASE.md', 'BUILDING.md', 'HOOKS.md', 'README.md', 'RELEASE.md', 'SUMMARY', 'THIRD_PARTY.md', 'build.ps1')
           $tracked = @(git ls-tree -r --name-only "refs/tags/$env:RELEASE_TAG")
           if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the release tree.' }
           foreach ($path in $tracked) {
@@ -99,7 +100,7 @@ jobs:
           if gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' > "$RUNNER_TEMP/aicy-release-state"; then
             [[ "$(cat "$RUNNER_TEMP/aicy-release-state")" == true ]] || { echo 'This version is already published. Create a new version tag.' >&2; exit 1; }
             gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
-            gh release edit "$RELEASE_TAG" --title "Aicy Browser Hook $RELEASE_TAG" --notes-file RELEASE.md --draft=false --latest
+            gh release edit "$RELEASE_TAG" --title "$RELEASE_VERSION" --notes-file RELEASE.md --draft=false --latest
           else
-            gh release create "$RELEASE_TAG" "${assets[@]}" --verify-tag --title "Aicy Browser Hook $RELEASE_TAG" --notes-file RELEASE.md --latest
+            gh release create "$RELEASE_TAG" "${assets[@]}" --verify-tag --title "$RELEASE_VERSION" --notes-file RELEASE.md --latest
           fi
