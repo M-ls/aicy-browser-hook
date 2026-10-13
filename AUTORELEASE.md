@@ -35,7 +35,7 @@ git push origin 16-1.1.4
 - Release 标题为 `versionName`，正文为更新说明，标签为 `versionCode-versionName`，附件至少包含一个有效 APK。
 - 官方发布仓库只上传 `SUMMARY`、`README.md` 及 APK，不上传程序源码、源码 ZIP、测试资料或构建缓存。源码保留在本个人仓库。
 
-当前尚未申请收录。现有 Application ID 为 `local.aicy.browserhook`，不满足官方包名归属要求。没有自有域名时可采用 GitHub 账号对应前缀；按官方机器人对账号 `M-ls` 的转换，候选为 `io.github.m_ls.aicybrowserhook`，参见 [机器人校验代码](https://github.com/Xposed-Modules-Repo/submission/blob/master/src/bot.ts)。
+当前保留 Application ID `local.aicy.browserhook`，暂缓申请收录；该包名不满足官方包名归属要求。没有自有域名时可采用 GitHub 账号对应前缀；按官方机器人对账号 `M-ls` 的转换，候选为 `io.github.m_ls.aicybrowserhook`，参见 [机器人校验代码](https://github.com/Xposed-Modules-Repo/submission/blob/master/src/bot.ts)。
 
 更换 Application ID 会使 Android 将其视为新应用，不能直接覆盖旧包，原配置也不会自动继承；旧模块需要停用以避免两个模块同时挂接。正式迁移前需确认新包名与配置迁移安排。
 
