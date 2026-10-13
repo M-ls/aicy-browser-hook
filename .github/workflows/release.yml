@@ -72,6 +72,13 @@ jobs:
       - name: Package release assets
         shell: pwsh
         run: |
+          $publicFiles = @('.gitattributes', '.gitignore', '.github/workflows/build.yml', '.github/workflows/release.yml', 'AUTORELEASE.md', 'BUILDING.md', 'HOOKS.md', 'README.md', 'RELEASE.md', 'THIRD_PARTY.md', 'build.ps1')
+          $tracked = @(git ls-tree -r --name-only "refs/tags/$env:RELEASE_TAG")
+          if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the release tree.' }
+          foreach ($path in $tracked) {
+            if ($path -cin $publicFiles -or $path -cmatch '^project/(AndroidManifest\.xml|Dockerfile|build\.sh|prepare-dependencies\.ps1)$' -or $path -cmatch '^project/(src/.*\.java|res/.*\.xml|assets/(xposed_init|material-icons-LICENSE\.txt))$') { continue }
+            throw "File is not approved for publication: $path"
+          }
           $apk = "AicyBrowserHook-$env:RELEASE_TAG.apk"
           $source = "AicyBrowserHook-$env:RELEASE_TAG-GitHub-source.zip"
           Copy-Item -LiteralPath dist/AicyBrowserHook.apk -Destination "dist/$apk"

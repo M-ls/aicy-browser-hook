@@ -1,5 +1,7 @@
 /work/
 /dist/
+/project/tests/
+/DEVICE_TESTS.md
 *.apk
 *.aab
 *.dex

@@ -20,7 +20,7 @@ jobs:
             work/aicy-hook-build/build-tools_r35_linux.zip
             work/aicy-hook-build/xposed-api-82.jar
           key: android-sdk-${{ runner.os }}-${{ hashFiles('project/prepare-dependencies.ps1') }}
-      - name: Build unsigned APK and run checks
+      - name: Build unsigned APK and verify alignment
         shell: pwsh
         run: ./build.ps1 -Unsigned
       - name: Upload build artifact

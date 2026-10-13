@@ -14,15 +14,15 @@ git tag -a v1.1.3 -m 'Release v1.1.3'
 git push origin v1.1.3
 ```
 
-[Publish signed APK](https://github.com/M-ls/aicy-browser-hook/actions/workflows/release.yml) 自动检查标签格式、Manifest 版本、发布说明及提交是否属于 `main`，然后使用 Docker 编译并运行 36 项路由 / 浏览器配置检查与 129 项搜索网址检查。APK 经 zipalign、原密钥签名、签名验证与固定证书指纹比对后，自动创建 [Release](https://github.com/M-ls/aicy-browser-hook/releases)。
+[Publish signed APK](https://github.com/M-ls/aicy-browser-hook/actions/workflows/release.yml) 自动检查标签格式、Manifest 版本、发布说明及提交是否属于 `main`，然后使用 Docker 编译。APK 经 zipalign、原密钥签名、签名验证与固定证书指纹比对后，自动创建 [Release](https://github.com/M-ls/aicy-browser-hook/releases)。
 
 发布附件：
 
 - `AicyBrowserHook-v版本号.apk`：可直接安装，同签名支持覆盖更新。
-- `AicyBrowserHook-v版本号-GitHub-source.zip`：该标签的 Git 跟踪源码与公共文档。
+- `AicyBrowserHook-v版本号-GitHub-source.zip`：该标签的应用源码、构建文件与公共文档。打包前核对允许发布的目录和文件，出现额外文件会终止发布。
 - `SHA256SUMS.txt`：以上两个附件的 SHA256 校验值。
 
-普通分支提交和 PR 只生成无签名检查产物，不读取发布密钥。GitHub Actions 不执行手机上的 Android Intent 或 LSPosed 实机检查；每版的设备验证需另外完成，并如实记录在发布说明中。
+普通分支提交和 PR 只生成无签名构建产物，不读取发布密钥。GitHub Actions 不运行本地测试源码或手机上的实机检查；发布说明仅保留必要的兼容范围与验证摘要，独立测试文档、测试源码、原始日志和截图只留在本地。
 
 ## 签名与权限
 

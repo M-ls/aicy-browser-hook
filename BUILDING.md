@@ -21,9 +21,7 @@
 
 脚本检查 Docker，准备依赖，优先复用 `aicy-browser-hook-builder:1`。不存在时才根据现有 Dockerfile 构建镜像。容器使用 `--rm`，退出后移除；源码挂载为只读，不修改其他容器。
 
-输出 `dist/AicyBrowserHook.apk`。过程包括资源打包、Java 编译、D8、zipalign、签名验证，以及 36 项 JVM 路由 / 浏览器配置 / 线程作用域检查和 129 项搜索引擎 / 网址模板检查。后者覆盖全部 17 家预置引擎的域名和查询参数、中文及特殊字符编码、自定义路径与重复占位符、无效网址拒绝。检查不访问搜索服务，也不操作手机。
-
-Android Intent 检查 JAR 生成在 `work/aicy-hook-build/runtime/intent-tests.jar`，需另外在设备运行。离线检查不能确认搜索网站的实际响应、登录状态或新增界面在手机上的显示效果。
+输出 `dist/AicyBrowserHook.apk`。过程包括资源打包、Java 编译、D8、zipalign 和签名验证。公开构建入口只依赖仓库中的应用源码，不生成测试 JAR；测试源码和设备记录不随仓库或发布附件分发。
 
 无签名构建：
 
@@ -31,7 +29,7 @@ Android Intent 检查 JAR 生成在 `work/aicy-hook-build/runtime/intent-tests.j
 ./build.ps1 -Unsigned
 ```
 
-输出 `dist/AicyBrowserHook-unsigned.apk`，经过相同编译、对齐及 JVM 检查，不生成或读取签名密钥。GitHub Actions 的分支提交与 PR 检查使用这个模式；它是构建检查产物，不能直接安装。
+输出 `dist/AicyBrowserHook-unsigned.apk`，经过相同编译与对齐检查，不生成或读取签名密钥。GitHub Actions 的分支提交与 PR 检查使用这个模式；它是构建检查产物，不能直接安装。
 
 ## 签名
 
@@ -60,19 +58,6 @@ docker run --rm -e SIGNING_MODE=unsigned \
 
 已有符合 Dockerfile 的镜像可跳过镜像构建。Dockerfile 会再次校验依赖。
 
-## 可选设备检查
-
-该脚本构造 Intent、检查字段保留、预置浏览器解析和自定义浏览器校验，不启动 Activity。需安装 Chrome、Via，以验证二者的真实应用声明；其他预置按设备安装情况检查可用或不可用分支。检查数量随系统版本与安装的浏览器变化。
-
-```bash
-adb push work/aicy-hook-build/runtime/intent-tests.jar /data/local/tmp/aicyhook-intent-tests.jar
-adb shell 'CLASSPATH=/data/local/tmp/aicyhook-intent-tests.jar app_process /system/bin local.aicy.browserhook.AndroidIntentTest'
-```
-
-测试入口可追加已安装、应被拒绝的非浏览器包名，例如 `com.taobao.taobao com.github.android`；未安装会报错，避免把“找不到应用”误当作能力检查通过。所测设备与具体结果见 [DEVICE_TESTS.md](DEVICE_TESTS.md)。
-
-这个检查不能代替 LSPosed 实际加载、Aicy 识屏及网页点击测试。
-
 ## 文件清理
 
-可删除的下载与编译文件集中在 `work/`，但其中 `signing.jks` 是覆盖更新所需密钥，应先备份。APK 输出在 `dist/`；二者已加入 `.gitignore`。设备检查的临时 JAR 不属于模块运行依赖。
+下载与编译文件集中在 `work/`，但其中 `signing.jks` 是覆盖更新所需密钥，应先备份。APK 输出在 `dist/`；二者已加入 `.gitignore`。本机测试源码与记录也保存在忽略目录中，不属于模块运行或公开构建依赖。
