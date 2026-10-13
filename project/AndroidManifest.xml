@@ -24,7 +24,7 @@
     <application android:label="Aicy 浏览器入口" android:theme="@style/AppTheme" android:allowBackup="false" android:supportsRtl="true">
         <meta-data android:name="xposedmodule" android:value="true" />
         <meta-data android:name="xposedminversion" android:value="82" />
-        <meta-data android:name="xposeddescription" android:value="新增分词网页搜索，将 Aicy 网页入口交给所选浏览器，保留 AI 搜索。" />
+        <meta-data android:name="xposeddescription" android:value="为魅族 Aicy 识屏添加普通网页搜索入口，支持自定义浏览器和搜索引擎。" />
         <meta-data android:name="xposedscope" android:resource="@array/xposed_scope" />
         <activity android:name=".SettingsActivity" android:exported="true">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="de.robv.android.xposed.category.MODULE_SETTINGS" /></intent-filter>
