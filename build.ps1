@@ -1,6 +1,7 @@
 param(
     [switch]$Unsigned,
     [switch]$Release,
+    [switch]$LegacyPackage,
     [string]$SigningKeyPath,
     [string]$ImageName = 'aicy-browser-hook-builder:1'
 )
@@ -29,7 +30,9 @@ if ($LASTEXITCODE -ne 0) {
     if ($LASTEXITCODE -ne 0) { throw 'Docker image build failed.' }
 }
 $hookMode = if ($Unsigned) { 'unsigned' } elseif ($Release) { 'release' } else { 'local' }
+$hookVariant = if ($LegacyPackage) { 'legacy' } else { 'registered' }
 $hookDockerArgs = @('run', '--rm', '--env', "SIGNING_MODE=$hookMode",
+    '--env', "BUILD_VARIANT=$hookVariant",
     '--mount', "type=bind,src=$hookProject,dst=/project,readonly",
     '--mount', "type=bind,src=$hookRuntime,dst=/build",
     '--mount', "type=bind,src=$hookOutput,dst=/out")
@@ -42,5 +45,6 @@ if ($Release) {
 }
 docker @hookDockerArgs $ImageName
 if ($LASTEXITCODE -ne 0) { throw 'Module build or validation failed.' }
-$hookApkName = if ($Unsigned) { 'AicyBrowserHook-unsigned.apk' } else { 'AicyBrowserHook.apk' }
+$hookApkBase = if ($LegacyPackage) { 'AicyBrowserHook-legacy' } else { 'AicyBrowserHook' }
+$hookApkName = if ($Unsigned) { "$hookApkBase-unsigned.apk" } else { "$hookApkBase.apk" }
 Get-FileHash -LiteralPath (Join-Path $hookOutput $hookApkName) -Algorithm SHA256

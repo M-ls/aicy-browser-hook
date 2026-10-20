@@ -11,7 +11,7 @@ import android.os.Bundle;
 
 /** Exposes routing settings read-only; only the Aicy packages may report hook status. */
 public final class ConfigProvider extends ContentProvider {
-    public static final Uri URI = Uri.parse("content://local.aicy.browserhook.config");
+    public static final Uri URI = Uri.parse("content://io.github.m_ls.aicybrowserhook.config");
     public static SharedPreferences preferences(Context context) {
         return context.getSharedPreferences("routing", Context.MODE_PRIVATE);
     }

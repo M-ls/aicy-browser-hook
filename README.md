@@ -8,7 +8,7 @@
 - MD2 风格设置页，底部“设置 / 状态”导航，支持隐藏桌面入口。
 - 预置浏览器和搜索引擎选择立即保存，无需重新加载 Aicy 进程；自定义包名经检查和确认后保存，自定义网址点“保存模板”后生效。
 
-当前版本：**1.1.3**（versionCode 15），包名 `local.aicy.browserhook`。新增浏览器列表和自定义包名，规范搜索引擎备注；搜索调用沿用 1.1.0。发布范围见 [RELEASE.md](RELEASE.md)。
+当前版本：**1.1.4**（versionCode 16），提供两个包名：LSPosed 收录版 `io.github.m_ls.aicybrowserhook`，以及供旧版覆盖升级的原包名版 `local.aicy.browserhook`。两版功能相同、沿用原签名；发布范围见 [RELEASE.md](RELEASE.md)。
 
 ## 兼容范围
 
@@ -18,10 +18,12 @@ Hook 使用上述版本的类名和方法名，其他 Aicy / Flyme 版本需检�
 
 ## 安装
 
-1. 从 [Releases](https://github.com/M-ls/aicy-browser-hook/releases) 下载并安装已签名的 `AicyBrowserHook-版本标签.apk`。现有 1.1.3 附件为 `AicyBrowserHook-v1.1.3.apk`，后续版本标签采用 `versionCode-versionName`。版本发布由 GitHub Actions 自动完成，沿用原签名密钥；普通构建检查的 `unsigned` 产物需要自行签名。
+1. 从 [Releases](https://github.com/M-ls/aicy-browser-hook/releases/tag/16-1.1.4) 下载已签名 APK：首次安装或使用 LSPosed 仓库选择 `AicyBrowserHook-16-1.1.4.apk`；从旧版直接升级、保留配置选择 `AicyBrowserHook-16-1.1.4-legacy.apk`。版本发布由 GitHub Actions 自动构建、签名；普通构建检查的 `unsigned` 产物需要自行签名。
 2. 在 LSPosed 启用模块，作用域同时勾选 **Aicy 识屏**（`com.meizu.picker`）和 **Aicy 助手**（`com.meizu.voiceassistant`）。
 3. 重启这两个应用的进程，或重启手机。
-4. 从桌面或 LSPosed 打开模块设置，选择浏览器和搜索引擎。默认选择 Chrome、跟随 Aicy，默认开启重定向与网页搜索入口。升级保留原浏览器选择与其他开关。
+4. 从桌面或 LSPosed 打开模块设置，选择浏览器和搜索引擎。默认选择 Chrome、跟随 Aicy，默认开启重定向与网页搜索入口。同包名、同签名覆盖升级保留原浏览器选择与其他开关。
+
+原包名版仅在个人 Releases 提供；LSPosed 仓库只发布 `io.github.m_ls.aicybrowserhook`。两个包名属于独立应用，配置不会自动互通。旧用户切换到收录版时，先记下设置，在 LSPosed 停用旧模块，安装新包后重新选择设置及两个作用域，再重启 Aicy 进程。确认正常后可卸载旧包；请勿同时启用两个模块。
 
 隐藏桌面入口后，仍可从 LSPosed 的模块页面打开设置并恢复图标。
 
@@ -76,7 +78,7 @@ https://example.com/find/{query}?source=aicy
 - 网页打不开：先确认对应浏览器已安装；尝试“跟随系统默认”。
 - 自定义搜索提示网址错误：检查 `{query}`、HTTP/HTTPS 网址与固定参数编码，并点“保存模板”。
 - 自定义浏览器无法保存：核对包名、启用状态和错误提示；只有注册通用网址入口的应用仍可能不符合浏览器要求。
-- 覆盖安装失败：新旧 APK 必须使用相同签名证书。
+- 覆盖安装失败：新旧 APK 必须使用相同包名与签名证书；旧包升级请选择 `legacy` 附件。
 
 提交问题时可附状态页与应用版本；请省略搜索内容、完整网址和个人信息。
 
@@ -86,11 +88,13 @@ https://example.com/find/{query}?source=aicy
 
 ```powershell
 ./build.ps1
+# 原包名版
+./build.ps1 -LegacyPackage
 # CI / 无需签名的构建
 ./build.ps1 -Unsigned
 ```
 
-源码在 `project/`，唯一环境文件为 `project/Dockerfile`。输出在 `dist/`，下载缓存、编译临时文件及本地签名密钥统一在 `work/`。详见 [BUILDING.md](BUILDING.md)。推送 `versionCode-versionName` 标签会自动构建、签名并发布 APK、源码包与校验文件，标签必须与 Manifest 中的两个版本字段完全一致。操作步骤及 Xposed 模块仓库收录要求见 [AUTORELEASE.md](AUTORELEASE.md)。
+源码在 `project/`，唯一环境文件为 `project/Dockerfile`。两版复用同一环境，原包名版只在 `work/` 临时源码副本中替换应用身份。输出在 `dist/`，下载缓存、编译临时文件及本地签名密钥统一在 `work/`。详见 [BUILDING.md](BUILDING.md)。推送 `versionCode-versionName` 标签会自动构建、签名并发布两个 APK、源码包与校验文件，标签必须与 Manifest 中的两个版本字段完全一致。操作步骤及 Xposed 模块仓库收录要求见 [AUTORELEASE.md](AUTORELEASE.md)。
 
 [验证范围与发布说明](RELEASE.md) · [Hook 入口说明](HOOKS.md) · [第三方说明](THIRD_PARTY.md)
 

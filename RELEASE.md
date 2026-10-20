@@ -1,31 +1,33 @@
-# 1.1.3 发布说明
+# 1.1.4 发布说明
 
-新增可配置的搜索引擎和浏览器。分词面板的“网页搜索”可选择 17 家预置服务或自定义网址；已有 Aicy 网页链接可交给 12 款预置浏览器、系统默认或通过检查的自定义应用。原有 AI 搜索和网页链接参数保持原处理方式。
-
-版本 `1.1.3` / versionCode `15`，包名 `local.aicy.browserhook`。沿用原签名证书，同签名覆盖安装保留浏览器选择、搜索设置及隐藏桌面入口状态。
+版本 `1.1.4` / versionCode `16`，标签 `16-1.1.4`。本版提供两个功能相同、使用原签名证书的 APK，分别用于 LSPosed 仓库收录和旧版覆盖升级。
 
 ## 变更
 
-- 搜索引擎：百度、必应、Google、360、搜狗、神马、DuckDuckGo、Brave Search、Startpage、Ecosia、Qwant、Yahoo、Yandex、Mojeek、Kagi、Swisscows、Yep；另可跟随 Aicy 或自定义含 `{query}` 的 HTTP/HTTPS 模板。搜索词按 UTF-8 编码，模板保存前检查格式。
-- 浏览器：Chrome、Via、Microsoft Edge、Firefox、Brave、Samsung Internet、Opera、Vivaldi、DuckDuckGo、夸克、UC 浏览器、QQ 浏览器；另有系统默认和自定义包名。MD2 选择对话框标注未安装的预置应用。
-- 自定义浏览器检查安装及启用状态、标准浏览器入口和通用 HTTP/HTTPS 的可用入口，提供“测试打开网页”。保存前显示应用名称、包名和接收网页链接 / 搜索网址的说明；取消或检查失败保留此前保存的设置，运行时失效尝试系统默认浏览器。
-- 规范选项备注：跟随 Aicy（使用系统配置，如百度）、Qwant（仅部分地区可用）、Kagi（首次使用需在浏览器中登录）。跟随 Aicy 以系统配置为准，不强制使用百度。
-- 保留 MD2 底部“设置 / 状态”分页、隐藏桌面入口开关及灰色署名。预置选择即时保存，自定义包名与网址模板需另外保存。
+- 收录版包名改为 `io.github.m_ls.aicybrowserhook`，使用 GitHub 账号对应前缀，满足 Xposed 模块仓库的包名归属要求。
+- 原包名版保留 `local.aicy.browserhook`，附件名带 `legacy`，供已安装旧版的用户直接覆盖升级并保留配置。此版本仅在个人 Releases 提供。
+- 同步配置 Provider 地址、设置组件与资源引用。两个包名使用独立配置，Hook 入口与浏览器 / 搜索引擎逻辑沿用 1.1.3。
+- 一次标签发布同时编译、对齐、签名并验证两个 APK。两版复用同一 Dockerfile 和签名密钥；源码包只包含应用源码、构建文件和公共文档。
 
-搜索引擎仅影响模块新增的“网页搜索”，与目标浏览器独立配置。Kagi 登录及 Cookie 由浏览器处理，模块不提取账号 token；自定义模板是普通共享配置，不应放入登录凭据。
+继续提供 12 款预置浏览器、系统默认及自定义浏览器，17 家预置搜索服务、跟随 Aicy 及自定义网址模板。搜索引擎仅影响模块新增的“网页搜索”，与目标浏览器独立配置。
+
+## 安装与迁移
+
+- **旧用户保留配置升级**：安装 `AicyBrowserHook-16-1.1.4-legacy.apk`，沿用原模块及作用域，再重启 Aicy 识屏和 Aicy 助手进程。
+- **首次安装或使用 LSPosed 仓库**：安装 `AicyBrowserHook-16-1.1.4.apk`，在 LSPosed 启用并勾选 `com.meizu.picker`、`com.meizu.voiceassistant`，然后重启两个应用进程。
+- **旧包切换到收录版**：先记下旧设置并在 LSPosed 停用旧模块，再安装新包、重新配置与选择作用域。新包不能覆盖旧包，旧配置不会自动继承。确认正常后可卸载旧包；不要同时启用两个模块。
 
 ## 验证与兼容范围
 
-资源打包、Java 编译、D8、zipalign 和签名验证通过。
+两版发布流程均执行资源打包、Java 编译、D8、zipalign、APK 包名核对、签名验证和固定证书指纹比对。公开 CI 不执行手机实测。
 
-已验证环境：魅族 21 Pro / Android 16 / Flyme 12.6.0.0A，Aicy 识屏 12.2.34、Aicy 助手 12.1.46。Chrome / Via 网页跳转、普通搜索及自定义浏览器设置通过本地检查。其他浏览器与 Aicy / Flyme 版本未逐个验证；搜索服务是否可用受地区、账号和服务自身限制影响。
-
-自定义浏览器判断依据应用声明，不能认证应用可信或证明网页一定显示正常；请实际打开网页后确认目标应用。
+1.1.3 的已验证环境：魅族 21 Pro / Android 16 / Flyme 12.6.0.0A，Aicy 识屏 12.2.34、Aicy 助手 12.1.46。1.1.4 未重新执行实机验证，尤其是新包名的 LSPosed 加载、配置读取及桌面入口行为仍需在设备上核对。其他浏览器与 Aicy / Flyme 版本未逐个验证；搜索服务可用性受地区、账号和服务自身限制影响。
 
 ## 附件
 
-- `AicyBrowserHook-v1.1.3.apk`：已签名，可直接安装。
-- `AicyBrowserHook-v1.1.3-GitHub-source.zip`：对应标签的源码与公共文档。当前源码已将测试源码及独立测试文档移至本地忽略目录；已发布的 v1.1.3 标签与附件仍对应清理前的提交。
-- `SHA256SUMS.txt`：本次发布附件的 SHA256；远端构建与本地实测 APK 的文件校验值可能不同，以对应附件为准。
+- `AicyBrowserHook-16-1.1.4.apk`：LSPosed 收录版，包名 `io.github.m_ls.aicybrowserhook`。
+- `AicyBrowserHook-16-1.1.4-legacy.apk`：原包名版，包名 `local.aicy.browserhook`，供旧版覆盖升级。
+- `AicyBrowserHook-16-1.1.4-GitHub-source.zip`：对应标签的源码、双包名构建入口与公共文档。
+- `SHA256SUMS.txt`：以上三个附件的 SHA256。
 
-签名证书 SHA256：`6d12194bb7ae583fc0facdc7a1038a6139beb5e459aaeb9f33bd60dfb2042d61`。安装后在 LSPosed 同时勾选 Aicy 识屏与 Aicy 助手作用域，再重启这两个应用的进程或手机。最低 Android 11，暂未添加源码许可证。
+两版签名证书 SHA256：`6d12194bb7ae583fc0facdc7a1038a6139beb5e459aaeb9f33bd60dfb2042d61`。最低 Android 11，暂未添加源码许可证。LSPosed 官方发布仓库只提供收录版 APK、SUMMARY 与 README，不上传原包名 APK、源码 ZIP 或本地验证资料。

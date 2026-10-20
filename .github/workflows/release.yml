@@ -50,7 +50,7 @@ jobs:
             work/aicy-hook-build/build-tools_r35_linux.zip
             work/aicy-hook-build/xposed-api-82.jar
           key: android-sdk-${{ runner.os }}-${{ hashFiles('project/prepare-dependencies.ps1') }}
-      - name: Build, sign and verify APK
+      - name: Build, sign and verify both package variants
         shell: pwsh
         env:
           SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
@@ -67,6 +67,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Could not restrict keystore permissions.' }
             Remove-Item Env:SIGNING_KEYSTORE_BASE64
             ./build.ps1 -Release -SigningKeyPath $keyPath
+            ./build.ps1 -Release -LegacyPackage -SigningKeyPath $keyPath
           } finally {
             if (Test-Path -LiteralPath $keyPath) { Remove-Item -LiteralPath $keyPath -Force }
           }
@@ -81,11 +82,13 @@ jobs:
             throw "File is not approved for publication: $path"
           }
           $apk = "AicyBrowserHook-$env:RELEASE_TAG.apk"
+          $legacyApk = "AicyBrowserHook-$env:RELEASE_TAG-legacy.apk"
           $source = "AicyBrowserHook-$env:RELEASE_TAG-GitHub-source.zip"
           Copy-Item -LiteralPath dist/AicyBrowserHook.apk -Destination "dist/$apk"
+          Copy-Item -LiteralPath dist/AicyBrowserHook-legacy.apk -Destination "dist/$legacyApk"
           git archive --format=zip --output="dist/$source" "refs/tags/$env:RELEASE_TAG"
           if ($LASTEXITCODE -ne 0) { throw 'Source archive failed.' }
-          $checksums = foreach ($name in $apk, $source) {
+          $checksums = foreach ($name in $apk, $legacyApk, $source) {
             "$((Get-FileHash -LiteralPath "dist/$name" -Algorithm SHA256).Hash.ToLowerInvariant())  $name"
           }
           [IO.File]::WriteAllText((Join-Path $PWD 'dist/SHA256SUMS.txt'), ($checksums -join "`n") + "`n", [Text.UTF8Encoding]::new($false))
@@ -96,7 +99,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          assets=("dist/AicyBrowserHook-$RELEASE_TAG.apk" "dist/AicyBrowserHook-$RELEASE_TAG-GitHub-source.zip" "dist/SHA256SUMS.txt")
+          assets=("dist/AicyBrowserHook-$RELEASE_TAG.apk" "dist/AicyBrowserHook-$RELEASE_TAG-legacy.apk" "dist/AicyBrowserHook-$RELEASE_TAG-GitHub-source.zip" "dist/SHA256SUMS.txt")
           if gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' > "$RUNNER_TEMP/aicy-release-state"; then
             [[ "$(cat "$RUNNER_TEMP/aicy-release-state")" == true ]] || { echo 'This version is already published. Create a new version tag.' >&2; exit 1; }
             gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber

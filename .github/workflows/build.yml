@@ -20,12 +20,16 @@ jobs:
             work/aicy-hook-build/build-tools_r35_linux.zip
             work/aicy-hook-build/xposed-api-82.jar
           key: android-sdk-${{ runner.os }}-${{ hashFiles('project/prepare-dependencies.ps1') }}
-      - name: Build unsigned APK and verify alignment
+      - name: Build both package variants and verify alignment
         shell: pwsh
-        run: ./build.ps1 -Unsigned
+        run: |
+          ./build.ps1 -Unsigned
+          ./build.ps1 -Unsigned -LegacyPackage
       - name: Upload build artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: AicyBrowserHook-unsigned
-          path: dist/AicyBrowserHook-unsigned.apk
+          path: |
+            dist/AicyBrowserHook-unsigned.apk
+            dist/AicyBrowserHook-legacy-unsigned.apk
           if-no-files-found: error

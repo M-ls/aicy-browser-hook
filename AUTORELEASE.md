@@ -7,7 +7,7 @@
 1. 修改 `project/AndroidManifest.xml` 的 `android:versionName`，并递增 `android:versionCode`。
 2. 更新 `README.md` 的当前版本，将 `RELEASE.md` 首行改为 `# 版本号 发布说明`，写入该版本的变更与实际验证范围。
 3. 提交并推送到 `main`，确认普通构建检查通过。
-4. 在这个提交上创建 `versionCode-versionName` 标签并推送。例如下一版若为 versionCode `16`、versionName `1.1.4`：
+4. 在这个提交上创建 `versionCode-versionName` 标签并推送。例如当前 versionCode `16`、versionName `1.1.4`：
 
 ```powershell
 git tag -a 16-1.1.4 -m 'Release 1.1.4 (16)'
@@ -16,13 +16,14 @@ git push origin 16-1.1.4
 
 [Publish signed APK](https://github.com/M-ls/aicy-browser-hook/actions/workflows/release.yml) 自动检查标签格式、Manifest 的两个版本字段、发布说明及提交是否属于 `main`，然后使用 Docker 编译。APK 经 zipalign、原密钥签名、签名验证与固定证书指纹比对后，自动创建 [Release](https://github.com/M-ls/aicy-browser-hook/releases)，发布标题使用 `versionName`。
 
-仓库整理和文档修改不递增版本、不创建标签。现有 `v1.1.3` 标签与 Release 保留；本次只规范后续发布流程，不为同一版本另发一个 `15-1.1.3`。下一次实际发布 APK 时再递增版本并采用新格式。
+仓库整理和文档修改不递增版本、不创建标签。现有 `v1.1.3` 标签与 Release 保留；1.1.4 起采用新格式，同一次标签发布同时构建收录版和原包名版。
 
 发布附件：
 
-- `AicyBrowserHook-版本标签.apk`：可直接安装，同包名、同签名支持覆盖更新。
+- `AicyBrowserHook-版本标签.apk`：收录版，包名 `io.github.m_ls.aicybrowserhook`。
+- `AicyBrowserHook-版本标签-legacy.apk`：原包名版，包名 `local.aicy.browserhook`，同签名支持覆盖旧版并保留配置。
 - `AicyBrowserHook-版本标签-GitHub-source.zip`：个人源码仓库中该标签的应用源码、构建文件与公共文档。打包前核对允许发布的目录和文件，出现额外文件会终止发布。
-- `SHA256SUMS.txt`：以上两个附件的 SHA256 校验值。
+- `SHA256SUMS.txt`：以上三个附件的 SHA256 校验值。
 
 普通分支提交和 PR 只生成无签名构建产物，不读取发布密钥。GitHub Actions 不运行本地测试源码或手机上的实机检查；发布说明仅保留必要的兼容范围与验证摘要，独立测试文档、测试源码、原始日志和截图只留在本地。
 
@@ -35,9 +36,11 @@ git push origin 16-1.1.4
 - Release 标题为 `versionName`，正文为更新说明，标签为 `versionCode-versionName`，附件至少包含一个有效 APK。
 - 官方发布仓库只上传 `SUMMARY`、`README.md` 及 APK，不上传程序源码、源码 ZIP、测试资料或构建缓存。源码保留在本个人仓库。
 
-当前保留 Application ID `local.aicy.browserhook`，暂缓申请收录；该包名不满足官方包名归属要求。没有自有域名时可采用 GitHub 账号对应前缀；按官方机器人对账号 `M-ls` 的转换，候选为 `io.github.m_ls.aicybrowserhook`，参见 [机器人校验代码](https://github.com/Xposed-Modules-Repo/submission/blob/master/src/bot.ts)。
+1.1.4 起使用 Application ID `io.github.m_ls.aicybrowserhook` 申请收录，符合官方机器人对 GitHub 账号 `M-ls` 的归属校验，参见 [机器人校验代码](https://github.com/Xposed-Modules-Repo/submission/blob/master/src/bot.ts)。原包名版 `local.aicy.browserhook` 仅在个人源码仓库的 Release 提供，不提交到官方模块仓库。
 
-更换 Application ID 会使 Android 将其视为新应用，不能直接覆盖旧包，原配置也不会自动继承；旧模块需要停用以避免两个模块同时挂接。正式迁移前需确认新包名与配置迁移安排。
+首次注册在 [submission](https://github.com/Xposed-Modules-Repo/submission/issues) 创建标题为 `[submission] io.github.m_ls.aicybrowserhook` 的 issue。机器人通过后接受模块仓库邀请，提交 `SUMMARY`、`README.md`，在浏览器设置仓库 Description 为 `Aicy 浏览器入口`、Home Page 为本源码仓库的支持链接，再发布标题 `1.1.4`、标签 `16-1.1.4` 且含收录版 APK 的 Release。官方仓库不上传 `legacy` APK 或源码包。
+
+原包名版可直接覆盖旧包。切换收录版会被 Android 视为新应用，不能覆盖旧包，原配置不会自动继承；应先记下设置并在 LSPosed 停用旧模块，再启用新模块、重新选择两个作用域和设置。不要同时启用两版。
 
 ## 签名与权限
 
