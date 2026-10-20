@@ -59,6 +59,13 @@ public final class SearchEngines {
         }
     }
     public static String trimTemplate(String template) { return template == null ? "" : template.trim(); }
+    /** 沿用 Aicy 的模板和固定参数，关键词仍由 buildUrl 统一编码。 */
+    public static String buildAicyUrl(String nativeTemplate, String rawQuery) {
+        String template = trimTemplate(nativeTemplate);
+        if (template.isEmpty()) template = "https://m.so.com/s?q=searchTerms&src=home&srcg=cs_meizu_11&nav=1";
+        if (!template.contains("searchTerms")) throw new IllegalArgumentException("无法识别 Aicy 搜索配置，请选择预置搜索引擎");
+        return buildUrl(CUSTOM, template.replace("searchTerms", QUERY), rawQuery);
+    }
     public static String templateError(String template) {
         if (template == null || template.isEmpty()) return "请输入自定义搜索网址";
         if (template.length() > 4096) return "网址模板过长";

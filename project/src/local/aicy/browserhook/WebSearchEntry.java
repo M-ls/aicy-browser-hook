@@ -16,34 +16,79 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.util.TypedValue;
+import java.lang.reflect.Method;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 
-/** Adds an independent button to the native word-selection panel. */
+/** 在原生分词操作栏中加入网页搜索按钮。 */
 public final class WebSearchEntry {
     private static final String PANEL = "com.meizu.picker.ParticipleWordActivity";
     private static final String TAG = "local.aicy.browserhook.web_search";
     private WebSearchEntry() {}
 
-    public static int install(ClassLoader loader, String jumpClass, String searchMethod, boolean modern) {
-        final String webMethod = modern ? "b0" : "U";
+    public static int install(ClassLoader loader, Method legacySearch) {
         XC_MethodHook refresh = new XC_MethodHook() {
             @Override protected void afterHookedMethod(MethodHookParam param) {
-                try { refresh((Activity) param.thisObject, loader, jumpClass, searchMethod, webMethod); }
+                try { refresh((Activity) param.thisObject, loader, legacySearch); }
                 catch (Throwable failure) { log("panel update", failure); }
             }
         };
         int hooks = 0;
         hooks += hook(loader, "onCreate", Bundle.class, refresh);
         hooks += hook(loader, "onResume", null, refresh);
-        hooks += hook(loader, modern ? "r0" : "U", boolean.class, refresh);
         return hooks;
+    }
+
+    /** 跟随面板重绘更新选词状态，避开各版本名称不同的刷新方法。 */
+    private static final class PanelObserver implements ViewTreeObserver.OnPreDrawListener, View.OnAttachStateChangeListener {
+        final View words;
+        final LinearLayout button;
+        final TextView reference;
+        ViewTreeObserver observer;
+        int lastColor = Integer.MIN_VALUE;
+        boolean failed;
+
+        PanelObserver(View words, LinearLayout button, TextView reference) {
+            this.words = words;
+            this.button = button;
+            this.reference = reference;
+            button.addOnAttachStateChangeListener(this);
+            if (button.isAttachedToWindow()) onViewAttachedToWindow(button);
+        }
+        @Override public void onViewAttachedToWindow(View view) {
+            observer = view.getViewTreeObserver();
+            observer.addOnPreDrawListener(this);
+        }
+        @Override public void onViewDetachedFromWindow(View view) {
+            if (observer != null && observer.isAlive()) observer.removeOnPreDrawListener(this);
+            observer = null;
+        }
+        @Override public boolean onPreDraw() {
+            if (failed || button.getVisibility() != View.VISIBLE) return true;
+            try {
+                boolean selected = !TextUtils.isEmpty(selectedText(words).trim());
+                if (button.isEnabled() != selected) button.setEnabled(selected);
+                int currentColor = reference.getCurrentTextColor();
+                // 改色会触发重绘，只在颜色变化时更新。
+                if (lastColor != currentColor) {
+                    lastColor = currentColor;
+                    ((TextView) button.getChildAt(1)).setTextColor(currentColor);
+                    ((SearchIcon) ((ImageView) button.getChildAt(0)).getDrawable()).setInk(currentColor);
+                }
+            } catch (Throwable failure) {
+                failed = true;
+                button.setEnabled(false);
+                log("selection observation", failure);
+            }
+            return true;
+        }
     }
 
     private static int hook(ClassLoader loader, String method, Class<?> type, XC_MethodHook callback) {
@@ -54,7 +99,7 @@ public final class WebSearchEntry {
         } catch (Throwable failure) { log("missing panel method " + method, failure); return 0; }
     }
 
-    private static void refresh(Activity activity, ClassLoader loader, String jumpClass, String searchMethod, String webMethod) {
+    private static void refresh(Activity activity, ClassLoader loader, Method legacySearch) {
         if (activity.isFinishing() || activity.isDestroyed()) return;
         View bottom = namedView(activity, "popup_bottom_container");
         View words = namedView(activity, "participle_word_layout");
@@ -91,9 +136,10 @@ public final class WebSearchEntry {
             label.setSingleLine(true);
             label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             button.addView(label, new LinearLayout.LayoutParams((LinearLayout.LayoutParams) reference.getLayoutParams()));
-            button.setOnClickListener(view -> search(activity, words, loader, jumpClass, searchMethod, webMethod));
+            button.setOnClickListener(view -> search(activity, words, loader, legacySearch));
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams((LinearLayout.LayoutParams) aiItem.getLayoutParams());
             row.addView(button, row.indexOfChild(aiItem), params);
+            new PanelObserver(words, button, reference);
             for (int i = 0; i < row.getChildCount(); i++) {
                 View action = row.getChildAt(i);
                 LinearLayout.LayoutParams equal = (LinearLayout.LayoutParams) action.getLayoutParams();
@@ -112,7 +158,7 @@ public final class WebSearchEntry {
         ((SearchIcon) ((ImageView) button.getChildAt(0)).getDrawable()).setInk(color);
     }
 
-    private static void search(Activity activity, View words, ClassLoader loader, String jumpClass, String searchMethod, String webMethod) {
+    private static void search(Activity activity, View words, ClassLoader loader, Method legacySearch) {
         try {
             Bundle config = activity.getContentResolver().call(ConfigProvider.URI, "get", null, null);
             if (config == null || !config.getBoolean("enabled", true) || !config.getBoolean("web_search_entry", true)) return;
@@ -123,22 +169,34 @@ public final class WebSearchEntry {
             }
             String url = SearchEngines.buildUrl(config.getString("search_engine", SearchEngines.AICY),
                     config.getString("search_template", ""), selected);
-            Class<?> jump = XposedHelpers.findClass(jumpClass, loader);
             if (url == null) {
-                // Preserve Aicy's configured engine, parameters and existing query encoding.
-                XposedHelpers.callStaticMethod(jump, searchMethod, activity, Uri.encode(selected));
-            } else {
-                // Use Aicy's known web-URL path so existing browser routing remains in force.
-                BrowserEntryScope.enter("TextSearch");
-                try { XposedHelpers.callStaticMethod(jump, webMethod, activity, url); }
-                finally { BrowserEntryScope.exit(); }
+                String template;
+                try { template = aicyTemplate(loader); }
+                catch (Throwable unavailable) {
+                    // 旧版没有配置接口时，交回原生搜索入口处理。
+                    if (legacySearch == null) throw unavailable;
+                    legacySearch.invoke(null, activity, Uri.encode(selected));
+                    return;
+                }
+                url = SearchEngines.buildAicyUrl(template, selected);
             }
+            BrowserHook.openSearch(activity, config, url);
+            activity.finish();
         } catch (IllegalArgumentException invalidTemplate) {
             Toast.makeText(activity, invalidTemplate.getMessage() + "，请在模块设置中检查", Toast.LENGTH_LONG).show();
         } catch (Throwable failure) {
             log("web search click", failure);
             Toast.makeText(activity, "网页搜索未成功，请检查模块状态", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private static String aicyTemplate(ClassLoader loader) {
+        Class<?> alpha = XposedHelpers.findClass("com.meizu.common.alphame.AlphaMe", loader);
+        Object instance = XposedHelpers.callStaticMethod(alpha, "getInstance");
+        Object value = XposedHelpers.callMethod(instance, "invoke", new Class<?>[] {String.class, Object[].class},
+                "getCdnInfo", new Object[] {"tag_search_engine_url"});
+        if (value != null && !(value instanceof String)) throw new IllegalStateException("Unexpected Aicy search configuration");
+        return (String) value;
     }
 
     private static String selectedText(View words) {

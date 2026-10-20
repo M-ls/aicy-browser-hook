@@ -39,6 +39,10 @@ public final class ConfigProvider extends ContentProvider {
                 edit.putInt("hooks", extras.getInt("hooks", 0));
                 edit.putInt("markers", extras.getInt("markers", 0));
                 edit.putInt("panel_hooks", extras.getInt("panel_hooks", 0));
+                edit.putInt("expected_panel_hooks", extras.getInt("expected_panel_hooks", 3));
+                edit.putInt("expected_hooks", extras.getInt("expected_hooks", 2));
+                edit.putInt("expected_markers", extras.getInt("expected_markers", 4));
+                edit.putString("adaptation", extras.getString("adaptation", "旧版兼容"));
                 edit.putString("version", extras.getString("version", "未知"));
                 edit.putString("package", extras.getString("package", "未知"));
             } else if ("route".equals(event)) {

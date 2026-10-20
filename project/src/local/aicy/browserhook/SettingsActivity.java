@@ -464,9 +464,10 @@ public final class SettingsActivity extends Activity {
         String result = loaded == 0 ? "尚未收到 Aicy 的加载报告。\n请先启用模块，再重启 Aicy。" :
                 "加载报告：" + time(loaded) + "\n进程包名：" + status.getString("package", "未知")
                 + "\nAicy 版本：" + status.getString("version", "未知")
-                + "\n已挂接入口：" + status.getInt("hooks", 0) + " / 2"
-                + "\n已覆盖网页路径：" + status.getInt("markers", 0) + " / 4"
-                + "\n分词面板挂接：" + status.getInt("panel_hooks", 0) + " / 3";
+                + "\n适配方式：" + status.getString("adaptation", "旧版兼容")
+                + "\n已挂接入口：" + status.getInt("hooks", 0) + " / " + status.getInt("expected_hooks", 2)
+                + "\n已覆盖网页路径：" + status.getInt("markers", 0) + " / " + status.getInt("expected_markers", 4)
+                + "\n分词面板挂接：" + status.getInt("panel_hooks", 0) + " / " + status.getInt("expected_panel_hooks", 3);
         long routed = status.getLong("route_at", 0);
         if (routed != 0) result += "\n\n最近改写：" + time(routed)
                 + "\n入口：" + status.getString("entry", "")
