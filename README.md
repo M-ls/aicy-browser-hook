@@ -8,17 +8,17 @@
 - MD2 风格设置页，底部“设置 / 状态”导航，支持隐藏桌面入口。
 - 预置浏览器和搜索引擎选择立即保存，无需重新加载 Aicy 进程；自定义包名经检查和确认后保存，自定义网址点“保存模板”后生效。
 
-最新正式版：**1.1.4**（versionCode 16），提供两个包名：LSPosed 收录版 `io.github.m_ls.aicybrowserhook`，以及供旧版覆盖升级的原包名版 `local.aicy.browserhook`。两版功能相同、沿用原签名；发布范围见 [RELEASE.md](RELEASE.md)。
+最新正式版：**1.1.5**（versionCode 17），提供两个包名：LSPosed 收录版 `io.github.m_ls.aicybrowserhook`，以及供旧版覆盖升级的原包名版 `local.aicy.browserhook`。两版功能相同、沿用原签名；发布范围见 [RELEASE.md](RELEASE.md)。
 
 ## 兼容范围
 
 最低 Android 11（API 30），需要 Xposed / LSPosed 环境。适配入口包括独立 Aicy 识屏 `com.meizu.picker` 12.2.34，以及 Aicy 助手 `com.meizu.voiceassistant` 内嵌识屏的 12.1.46、13.0.51。
 
-Aicy 13.0.51 的适配包含在当前开发版本中，正式版 1.1.4 尚不支持。旧版沿用已有入口映射，新版结合方法签名和字节码特征识别；其他 Aicy / Flyme 版本请查看模块状态，不能保证兼容。详细入口见 [HOOKS.md](HOOKS.md)。模块针对 Aicy，不为其他品牌手机提供通用识屏功能，也不启用旧搜图入口。
+旧版沿用已有入口映射，新版结合方法签名和字节码特征识别；其他 Aicy / Flyme 版本请查看模块状态，不能保证兼容。详细入口见 [HOOKS.md](HOOKS.md)。模块针对 Aicy，不为其他品牌手机提供通用识屏功能，也不启用旧搜图入口。
 
 ## 安装
 
-1. 从 [Releases](https://github.com/M-ls/aicy-browser-hook/releases/tag/16-1.1.4) 下载已签名 APK：首次安装或使用 LSPosed 仓库选择 `AicyBrowserHook-16-1.1.4.apk`；从旧版直接升级、保留配置选择 `AicyBrowserHook-16-1.1.4-legacy.apk`。版本发布由 GitHub Actions 自动构建、签名；普通构建检查的 `unsigned` 产物需要自行签名。
+1. 从 [Releases](https://github.com/M-ls/aicy-browser-hook/releases/tag/17-1.1.5) 下载已签名 APK：首次安装或使用 LSPosed 仓库选择 `AicyBrowserHook-17-1.1.5.apk`；从旧版直接升级、保留配置选择 `AicyBrowserHook-17-1.1.5-legacy.apk`。版本发布由 GitHub Actions 自动构建、签名；普通构建检查的 `unsigned` 产物需要自行签名。
 2. 在 LSPosed 启用模块，作用域同时勾选 **Aicy 识屏**（`com.meizu.picker`）和 **Aicy 助手**（`com.meizu.voiceassistant`）。
 3. 重启这两个应用的进程，或重启手机。
 4. 从桌面或 LSPosed 打开模块设置，选择浏览器和搜索引擎。默认选择 Chrome、跟随 Aicy，默认开启重定向与网页搜索入口。同包名、同签名覆盖升级保留原浏览器选择与其他开关。
