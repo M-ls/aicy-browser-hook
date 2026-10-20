@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -48,9 +48,11 @@ export function checkApk(badging, signature, release) {
     if (!match || match[1] !== PACKAGE || match[2] !== release.code.toString() || match[3] !== release.version) {
         throw new Error('APK package or version does not match the LSPosed release.');
     }
-    if (!/^Number of signers: 1\s*$/m.test(signature)
-            || !signature.includes(`Signer #1 certificate SHA-256 digest: ${CERTIFICATE}`)) {
-        throw new Error('APK signing certificate does not match the published module.');
+    const signers = /^Number of signers:\s*(\d+)\s*$/m.exec(signature)?.[1];
+    const certificates = [...signature.matchAll(/^Signer #\d+ certificate SHA-256 digest:\s*([a-f0-9]{64})\s*$/gim)]
+        .map(match => match[1].toLowerCase());
+    if (signers !== '1' || certificates.length !== 1 || certificates[0] !== CERTIFICATE) {
+        throw new Error(`APK signing certificate mismatch: signers=${signers ?? 'not reported'}, SHA256=${certificates.join(',') || 'not reported'}.`);
     }
 }
 
@@ -146,11 +148,11 @@ export async function syncRelease(api, release, apk, notes, targetCommit) {
 function buildTools() {
     const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
     if (!sdk) throw new Error('Android SDK is required to check the APK.');
-    const root = join(sdk, 'build-tools');
-    const versions = readdirSync(root).sort((a, b) => b.localeCompare(a, 'en', { numeric: true }));
-    const tools = versions.map(version => join(root, version))
-        .find(path => existsSync(join(path, 'aapt')) && existsSync(join(path, 'apksigner')));
-    if (!tools) throw new Error('Android aapt and apksigner were not found.');
+    // 与 APK 构建使用同一版工具，避免 runner 升级后改变校验输出格式。
+    const tools = join(sdk, 'build-tools', '35.0.0');
+    if (!existsSync(join(tools, 'aapt')) || !existsSync(join(tools, 'apksigner'))) {
+        throw new Error('Android SDK Build Tools 35.0.0 are required to check the APK.');
+    }
     return tools;
 }
 
