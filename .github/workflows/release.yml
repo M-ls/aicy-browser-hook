@@ -5,9 +5,17 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing VersionCode-VersionName tag to publish (for example 16-1.1.4)
+        description: Existing VersionCode-VersionName tag (for example 17-1.1.5)
         required: true
         type: string
+      mode:
+        description: Publish both repositories or retry LSPosed synchronization only
+        required: true
+        default: publish
+        type: choice
+        options:
+          - publish
+          - sync-lsposed
 permissions:
   contents: read
 concurrency:
@@ -15,7 +23,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
-    if: github.repository == 'M-ls/aicy-browser-hook'
+    if: github.repository == 'M-ls/aicy-browser-hook' && inputs.mode != 'sync-lsposed'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -74,7 +82,7 @@ jobs:
       - name: Package release assets
         shell: pwsh
         run: |
-          $publicFiles = @('.gitattributes', '.gitignore', '.github/workflows/build.yml', '.github/workflows/release.yml', 'AUTORELEASE.md', 'BUILDING.md', 'HOOKS.md', 'README.md', 'RELEASE.md', 'SUMMARY', 'THIRD_PARTY.md', 'build.ps1')
+          $publicFiles = @('.gitattributes', '.gitignore', '.github/workflows/build.yml', '.github/workflows/release.yml', '.github/scripts/sync-lsposed.mjs', 'distribution/lsposed/README.md', 'AUTORELEASE.md', 'BUILDING.md', 'HOOKS.md', 'README.md', 'RELEASE.md', 'SUMMARY', 'THIRD_PARTY.md', 'build.ps1')
           $tracked = @(git ls-tree -r --name-only "refs/tags/$env:RELEASE_TAG")
           if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the release tree.' }
           foreach ($path in $tracked) {
@@ -107,3 +115,25 @@ jobs:
           else
             gh release create "$RELEASE_TAG" "${assets[@]}" --verify-tag --title "$RELEASE_VERSION" --notes-file RELEASE.md --latest
           fi
+  sync-lsposed:
+    needs: release
+    if: >-
+      always() && !cancelled() && github.repository == 'M-ls/aicy-browser-hook' &&
+      (needs.release.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'sync-lsposed'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    concurrency:
+      group: lsposed-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Sync the registered APK and module documentation to LSPosed
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+          SOURCE_GH_TOKEN: ${{ github.token }}
+          LSPOSED_RELEASE_TOKEN: ${{ secrets.LSPOSED_RELEASE_TOKEN }}
+        run: node .github/scripts/sync-lsposed.mjs

@@ -5,16 +5,18 @@
 ## 发布一次新版本
 
 1. 修改 `project/AndroidManifest.xml` 的 `android:versionName`，并递增 `android:versionCode`。
-2. 更新 `README.md` 的当前版本，将 `RELEASE.md` 首行改为 `# 版本号 发布说明`，写入该版本的变更与实际验证范围。
+2. 更新 `README.md` 的当前版本，将 `RELEASE.md` 首行改为 `# 版本号 发布说明`，写入该版本的功能变更。安装、迁移和附件说明放在后续的二级标题下。
 3. 提交并推送到 `main`，确认普通构建检查通过。
-4. 在这个提交上创建 `versionCode-versionName` 标签并推送。例如当前 versionCode `16`、versionName `1.1.4`：
+4. 在这个提交上创建 `versionCode-versionName` 标签并推送。例如 versionCode `17`、versionName `1.1.5`：
 
 ```powershell
-git tag -a 16-1.1.4 -m 'Release 1.1.4 (16)'
-git push origin 16-1.1.4
+git tag -a 17-1.1.5 -m 'Release 1.1.5 (17)'
+git push origin 17-1.1.5
 ```
 
 [Publish signed APK](https://github.com/M-ls/aicy-browser-hook/actions/workflows/release.yml) 自动检查标签格式、Manifest 的两个版本字段、发布说明及提交是否属于 `main`，然后使用 Docker 编译。APK 经 zipalign、原密钥签名、签名验证与固定证书指纹比对后，自动创建 [Release](https://github.com/M-ls/aicy-browser-hook/releases)，发布标题使用 `versionName`。
+
+个人仓库发布成功后，同一工作流会将收录版 APK、模块说明和更新日志同步到 `Xposed-Modules-Repo/io.github.m_ls.aicybrowserhook`。同步失败不会撤销个人仓库已经发布的版本。
 
 仓库整理和文档修改不递增版本、不创建标签。现有 `v1.1.3` 标签与 Release 保留；1.1.4 起采用新格式，同一次标签发布同时构建收录版和原包名版。
 
@@ -42,9 +44,26 @@ git push origin 16-1.1.4
 
 原包名版可直接覆盖旧包。切换收录版会被 Android 视为新应用，不能覆盖旧包，原配置不会自动继承；应先记下设置并在 LSPosed 停用旧模块，再启用新模块、重新选择两个作用域和设置。不要同时启用两版。
 
+## LSP 自动同步
+
+同步使用本仓库的 `LSPOSED_RELEASE_TOKEN` Actions Secret。令牌需要有模块仓库的内容写入权限，用于更新说明文件、创建标签和发布 Release。组织外部协作者使用具有 `public_repo` scope 的 classic PAT；细粒度 PAT 目前不支持外部协作者仓库。令牌由仓库所有者在 **Settings → Secrets and variables → Actions** 配置，到期后需更新，不写入源码或发布附件。
+
+同步文件来自以下位置：
+
+| LSP 内容 | 来源 |
+| --- | --- |
+| README.md | `distribution/lsposed/README.md` |
+| SUMMARY | 本仓库根目录的 `SUMMARY` |
+| 更新日志 | 已发布 Release 正文的首个标题之后、下一个二级标题之前 |
+| APK | 已发布 Release 中的 `AicyBrowserHook-版本标签.apk` |
+
+脚本核对源 APK 的 SHA256、包名、版本号和签名证书，只上传收录版 APK。说明文件以一次提交更新到模块仓库；Release 先创建草稿，上传 APK 后再公开。已有同版本、同内容时可以重跑；已发布 APK 不同则停止，不覆盖安装包。发现更新版本时跳过旧版本，避免回退。
+
+LSP 站点抓取模块仓库的 Release 正文作为更新日志，README 作为模块介绍。官方说明索引通常在仓库更新后的 5～60 分钟刷新，GitHub 发布成功不代表手机缓存已刷新。
+
 ## 签名与权限
 
-仓库 Actions Secrets 已配置三个值：
+签名使用以下三个 Actions Secrets：
 
 | 名称 | 用途 |
 | --- | --- |
@@ -60,11 +79,13 @@ git push origin 16-1.1.4
 
 这是原已安装 APK 的签名证书。密钥缺失、密码错误或指纹不符会终止构建，发布模式不会生成替代密钥。密钥只恢复到 runner 临时目录、以只读文件挂载到容器，签名步骤结束即移除临时密钥；SDK 缓存只包含三个已校验的公开依赖文件。
 
-只有发布 job 获得 `contents: write`，通过内置 `GITHUB_TOKEN` 创建 Release，无需额外保存发布用 PAT。签名私钥不进入 Git、源码 ZIP、构建缓存或 Release 附件。本机原密钥在 `work/aicy-hook-build/runtime/signing.jks`，仍需自行备份，避免把含密钥的整个 `work/` 当作普通缓存清空。
+只有构建发布 job 获得本仓库的 `contents: write`，通过内置 `GITHUB_TOKEN` 创建个人 Release。LSP 同步 job 对本仓库只读，通过独立的 `LSPOSED_RELEASE_TOKEN` 写入模块仓库。签名私钥不进入 Git、源码 ZIP、构建缓存或 Release 附件。本机原密钥在 `work/aicy-hook-build/runtime/signing.jks`，仍需自行备份，避免把含密钥的整个 `work/` 当作普通缓存清空。
 
 ## 失败恢复
 
-在 Actions 查看失败步骤。修复 Secrets 后可直接重新运行失败的 job；也可选择发布工作流的 **Run workflow**，输入已经存在且版本匹配的标签。首次创建 Release 时会先上传附件再公开；若只留下草稿，重新运行会补齐附件后发布。已经公开的版本会拒绝重复覆盖，应递增版本并创建新标签。
+在 Actions 查看失败步骤。修复 Secrets 后可直接重新运行失败的 job。若个人 Release 已成功，只需选择发布工作流的 **Run workflow**，输入原标签并将 `mode` 设为 `sync-lsposed`；这会跳过编译和个人 Release，仅补同步 LSP，也适用于已经发布的 `17-1.1.5`。
+
+`mode=publish` 执行完整流程。首次创建个人 Release 时会先上传附件再公开；若只留下草稿，重新运行会补齐附件后发布。个人仓库已经公开的版本会拒绝重复覆盖，应通过仅同步模式处理 LSP 失败，不用递增版本或移动旧标签。
 
 工作流不会自动创建版本标签，也不会在每次提交时发版。推送标签前确认应用代码和发布说明已准备好。
 
